@@ -440,31 +440,31 @@ form.oninput = () => {
 
 // MARK: INITIAL TAB FETCH
 loadEndpoints().then(() => {
+  document.querySelectorAll('nav input[name="nav"]').forEach((input) => {
+    input.onchange = () => {
+      if (!input.checked) return
+
+      const proceed = () => {
+        const label = input.closest("label")
+        const endpoint = input.value
+        if (endpoint) loadEndpoint(`${BASE_URL}${endpoint}`)
+      }
+
+      if (hasUnsavedChanges()) {
+        confirmAction("You have unsaved changes. Discard them?", {
+          type: "confirm",
+        }).then((ok) => {
+          if (ok) proceed()
+        })
+      } else {
+        proceed()
+      }
+    }
+  })
+
   const selected = document.querySelector('nav input[name="nav"]:checked');
-  if (selected?.oninput) selected.oninput();
+  if (selected?.onchange) selected.onchange()
 });
-// MARK: TAB SWITCH LOGIC
-document.querySelectorAll('nav input[name="nav"]').forEach((input) => {
-  input.onchange = () => {
-    if (!input.checked) return
-
-    const proceed = () => {
-      const label = input.closest("label")
-      const endpoint = input.value
-      if (endpoint) loadEndpoint(`${BASE_URL}${endpoint}`)
-    }
-
-    if (hasUnsavedChanges()) {
-      confirmAction("You have unsaved changes. Discard them?", {
-        type: "confirm",
-      }).then((ok) => {
-        if (ok) proceed()
-      })
-    } else {
-      proceed()
-    }
-  }
-})
 // MARK: NEW ROW CREATION
 newButton.onclick = () => {
   if (
