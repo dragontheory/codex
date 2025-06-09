@@ -167,36 +167,10 @@ function hasUnsavedChanges() {
 window.onbeforeunload = () => (hasUnsavedChanges() ? true : undefined)
 
 // Modal & UI Utilities
-function showModal({ title = "", message = "", buttons = [] }) {
-  return new Promise((resolve) => {
-    const modal = document.querySelector("modal-")
-    if (!modal) return resolve(null)
-
-    modal.querySelector("h4").textContent = title
-    modal.querySelector("p").textContent = message
-
-    const modalButtons = modal.querySelectorAll("button")
-    modalButtons.forEach((btn, index) => {
-      const buttonData = buttons[index]
-      btn.textContent = buttonData ? buttonData.label : ""
-      btn.onclick = buttonData
-        ? () => {
-          clearModal()
-          resolve(buttonData.value)
-        }
-        : null
-    })
-
-    function clearModal() {
-      modal.querySelector("h4").textContent = ""
-      modal.querySelector("p").textContent = ""
-      modalButtons.forEach((btn) => {
-        btn.textContent = ""
-        btn.onclick = null
-      })
-    }
-  })
-}
+// The previous implementation relied on a custom modal element. This has been
+// removed in favor of using the browser's native `confirm` and `alert`
+// functions. All calls expecting a promise still work because `confirmAction`
+// returns a resolved Promise.
 
 // Form State Utilities
 // MARK: TRACK FROM ORIGINAL STATE
@@ -522,11 +496,7 @@ form.onsubmit = (e) => {
 
   console.log("[FORM SUBMIT]", { method, url, data });
 
-  showModal({
-    title: "Please Confirm",
-    message: "Save changes?",
-    buttons: [{ label: "Yes", value: true }, { label: "No", value: false }],
-  })
+  confirmAction("Save changes?", { type: "confirm" })
 
     .then((confirmed) => {
       if (!confirmed) return; // Explicitly stop if user clicks "No"
@@ -540,11 +510,7 @@ form.onsubmit = (e) => {
 
     .then((res) => {
       if (res && res.ok !== false) {
-        showModal({
-          title: "Success",
-          message: "Changes saved successfully.",
-          buttons: [{ label: "OK", value: true }],
-        });
+        confirmAction("Changes saved successfully.", { type: "alert" });
         loadEndpoint(`${BASE_URL}${endpoint}`);
       } else if (res && res.ok === false) {
         throw new Error("Network response was not ok.");
@@ -553,11 +519,7 @@ form.onsubmit = (e) => {
 
     .catch((err) => {
       console.error("Failed to save record:", err);
-      showModal({
-        title: "Error",
-        message: "Error saving record.",
-        buttons: [{ label: "OK", value: true }],
-      });
+      confirmAction("Error saving record.", { type: "alert" });
     });
 };
 
@@ -617,19 +579,11 @@ closeButton.onclick = () => {
 
 // === confirmAction using Unified Modal ===
 function confirmAction(message, { type = "confirm" } = {}) {
-  const config = {
-    title: type === "confirm" ? "Please Confirm" : "Notice",
-    message,
-    buttons:
-      type === "confirm"
-        ? [
-          { label: "Yes", value: true },
-          { label: "No", value: false },
-        ]
-        : [{ label: "OK", value: true }],
+  if (type === "confirm") {
+    return Promise.resolve(window.confirm(message))
   }
-
-  return showModal(config)
+  window.alert(message)
+  return Promise.resolve(true)
 }
 
 // MARK: APPLICATION-LEVEL EVENT HANDLERS (Before Unload Warning)
